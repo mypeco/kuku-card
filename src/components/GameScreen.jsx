@@ -16,24 +16,25 @@ function useIsLandscape() {
 
 const TenKeyPad = ({ onInput, onClear, disabled, handedness, onToggleHand, isLandscape }) => {
   const btns = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0]
+  // 横置き時：ボタンをw-16 h-16の固定サイズにしてグリッド全体をcentering
   return (
-    <div className="flex flex-col h-full p-2 gap-1">
-      <div className="flex justify-end shrink-0 mb-1">
+    <div className="flex flex-col h-full items-center justify-center p-4 gap-3">
+      <div className="flex justify-end w-full">
         <button onClick={onToggleHand}
           className="text-xs font-bold px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm active:scale-95">
           {handedness === 'right' ? '🤜 右手' : '🤛 左手'}
         </button>
       </div>
-      {/* 横置き：aspect-squareで正方形ボタン、縦置き：flex-1で高さを使い切る */}
-      <div className={`grid grid-cols-3 gap-2 ${isLandscape ? '' : 'flex-1'}`}>
+      <div className={`grid grid-cols-3 ${isLandscape ? 'gap-3' : 'gap-2 w-full flex-1'}`}
+        style={isLandscape ? { gridTemplateColumns: 'repeat(3, 4rem)' } : {}}>
         {btns.map(n => (
           <button key={n}
-            className={`${isLandscape ? 'aspect-square' : ''} rounded-xl bg-white border-b-[3px] border-emerald-200 text-2xl font-bold text-emerald-600 active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
+            className={`${isLandscape ? 'w-16 h-16' : ''} rounded-xl bg-white border-b-[3px] border-emerald-200 text-2xl font-bold text-emerald-600 active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
             onClick={() => !disabled && onInput(n)}
           >{n}</button>
         ))}
         <button onClick={onClear}
-          className={`col-start-3 row-start-4 ${isLandscape ? 'aspect-square' : ''} rounded-xl bg-amber-100 border-b-[3px] border-amber-200 text-amber-600 font-bold active:border-b-0 active:translate-y-[3px] flex items-center justify-center`}>
+          className={`col-start-3 row-start-4 ${isLandscape ? 'w-16 h-16' : ''} rounded-xl bg-amber-100 border-b-[3px] border-amber-200 text-amber-600 font-bold active:border-b-0 active:translate-y-[3px] flex items-center justify-center`}>
           C
         </button>
       </div>
@@ -112,10 +113,10 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
 
   // ── 問題カード ─────────────────────────────────────────────
   const QuestionCard = () => (
-    <div className={`w-full bg-white rounded-[2rem] shadow-lg flex flex-col items-center justify-center relative border-b-4 overflow-hidden transition-all
+    <div className={`bg-white rounded-[2rem] shadow-lg flex flex-col items-center justify-center border-b-4 overflow-hidden transition-all relative
       ${feedback === 'correct' ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100'}
       ${feedback === 'wrong'   ? 'border-rose-400 shake bg-rose-50' : ''}
-      ${isLandscape ? 'flex-1' : (isTenkey ? 'h-48' : 'flex-1 max-h-[22rem]')}
+      ${isLandscape ? 'px-12 py-10' : (isTenkey ? 'py-8 px-8 w-full' : 'flex-1 max-h-[22rem] w-full px-8')}
     `}>
       <div className="flex items-center gap-2 text-[3.5rem] sm:text-[5rem] font-black text-slate-700 leading-none">
         <span>{q.d}</span>
@@ -130,8 +131,9 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
           <span className={showFlashAns ? 'text-slate-800 animate-pop' : 'text-transparent'}>{q.a}</span>
         )}
       </div>
+      {/* 読み方：式の直下に配置 */}
       {showReading && (
-        <div className="absolute bottom-3 text-emerald-500 font-bold bg-white/80 px-4 py-1 rounded-full animate-pop text-base tracking-widest border border-emerald-100">
+        <div className="mt-4 text-emerald-500 font-bold px-4 py-1 rounded-full text-base tracking-widest border border-emerald-100 bg-emerald-50">
           {kukuReadings[q.d][q.m - 1]}
         </div>
       )}
@@ -183,8 +185,8 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
 
       {/* メインエリア：横置き時は左右分割 */}
       {isLandscape && isTenkey ? (
-        <div className={`flex flex-1 min-h-0 p-3 gap-3 ${handLeft ? 'flex-row-reverse' : 'flex-row'}`}>
-          <div className="flex-1 flex flex-col gap-2 min-w-0">
+        <div className={`flex flex-1 min-h-0 p-6 gap-6 items-center ${handLeft ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div className="flex-1 flex items-center justify-center min-w-0">
             <QuestionCard />
           </div>
           <TenkeyPanel />
