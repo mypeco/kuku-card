@@ -1,22 +1,23 @@
 import { UserIcon } from './Icons.jsx'
 
-export const ResultScreen = ({ result, modeType, onRetry, onHome, onOpenParent }) => {
+export const ResultScreen = ({ result, modeType, onRetry, onHome, onOpenDashboard }) => {
   const sec = (result.timeMs / 1000).toFixed(1)
   const accuracy = Math.max(0, Math.round(((result.total - result.mistakeCount) / result.total) * 100))
 
-  let stamp = '👍'
-  let msg = 'よくがんばったね！'
+  let stamp = '👍', msg = 'よくがんばったね！'
   if (accuracy === 100) { stamp = '💮'; msg = 'かんぺき！すごい！' }
   else if (accuracy >= 80) { stamp = '🎉'; msg = 'そのちょうし！' }
   if (modeType === 'flash') { stamp = '⚡'; msg = 'スピードアップ！' }
 
   return (
     <div className="flex flex-col items-center justify-center h-full bg-orange-50 animate-pop p-6 relative">
-      <button onClick={onOpenParent} className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-2 bg-white rounded-full text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-200 text-xs font-bold transition-all">
+      <button onClick={onOpenDashboard}
+        className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-2 bg-white rounded-full text-slate-500 shadow-sm border border-slate-200 text-xs font-bold">
         <UserIcon className="w-4 h-4" />記録を見る
       </button>
-      <div className="text-[7rem] md:text-[9rem] animate-bounce mb-2 filter drop-shadow-md select-none">{stamp}</div>
-      <h2 className="text-2xl md:text-3xl font-black text-orange-600 mb-6">{msg}</h2>
+
+      <div className="text-[7rem] animate-bounce mb-2 select-none filter drop-shadow-md">{stamp}</div>
+      <h2 className="text-2xl font-black text-orange-600 mb-6">{msg}</h2>
 
       <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-lg mb-8">
         <div className="flex justify-between items-end border-b border-orange-100 pb-2 mb-2">
