@@ -131,52 +131,54 @@ export const MasterApp = ({ user, settings, onUpdateSettings, onExit }) => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center px-4 gap-2 min-h-0 pb-24">
-        {tab === 'DAN' ? (
-          <>
-            <div className="grid grid-cols-3 gap-3">
-              {[1,2,3,4,5,6,7,8,9].map(d => (
-                <button key={d} onClick={() => setSelDan(d)}
-                  className={`h-16 rounded-2xl text-3xl font-black border-b-4 active:translate-y-[2px] active:border-b-0 transition-all
-                    ${selDan === d ? 'bg-emerald-500 text-white border-emerald-700 shadow-lg' : 'bg-white border-emerald-100 text-emerald-300'}`}>
-                  {d}
-                </button>
-              ))}
-            </div>
-            <div className="bg-emerald-50 p-2 rounded-xl">
-              <div className="flex gap-2">
-                {[['normal','じゅんばん'],['reverse','ぎゃく'],['shuffle','バラバラ']].map(([k, l]) => (
-                  <button key={k} onClick={() => setSubMode(k)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${subMode === k ? 'bg-emerald-500 text-white shadow' : 'bg-white text-emerald-300'}`}>
-                    {l}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-2 min-h-0 pb-24">
+        <div className="w-full max-w-xs">
+          {tab === 'DAN' ? (
+            <>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {[1,2,3,4,5,6,7,8,9].map(d => (
+                  <button key={d} onClick={() => setSelDan(d)}
+                    className={`h-12 rounded-2xl text-2xl font-black border-b-4 active:translate-y-[2px] active:border-b-0 transition-all
+                      ${selDan === d ? 'bg-emerald-500 text-white border-emerald-700 shadow-lg' : 'bg-white border-emerald-100 text-emerald-300'}`}>
+                    {d}
                   </button>
                 ))}
               </div>
+              <div className="bg-emerald-50 p-2 rounded-xl">
+                <div className="flex gap-2">
+                  {[['normal','じゅんばん'],['reverse','ぎゃく'],['shuffle','バラバラ']].map(([k, l]) => (
+                    <button key={k} onClick={() => setSubMode(k)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${subMode === k ? 'bg-emerald-500 text-white shadow' : 'bg-white text-emerald-300'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              {[10, 20, 50, 100].map(c => (
+                <button key={c} onClick={() => { setSelDan('ALL'); setQCount(c) }}
+                  className={`w-full py-2.5 rounded-2xl font-black text-lg border-b-4 active:scale-95 transition-all
+                    ${selDan === 'ALL' && qCount === c ? 'bg-orange-500 text-white border-orange-700 shadow-lg' : 'bg-white border-orange-100 text-orange-300'}`}>
+                  ランダム {c}もん
+                </button>
+              ))}
+              <div className="border-t border-slate-100 pt-2">
+                <button
+                  onClick={() => hasWeakness && setSelDan('WEAKNESS')}
+                  disabled={!hasWeakness}
+                  className={`w-full py-2.5 rounded-2xl font-black text-lg border-b-4 active:scale-95 transition-all flex items-center justify-center gap-2
+                    ${selDan === 'WEAKNESS' ? 'bg-rose-500 text-white border-rose-700 shadow-lg'
+                    : hasWeakness ? 'bg-white border-rose-100 text-rose-400'
+                    : 'bg-slate-100 border-slate-200 text-slate-300'}`}>
+                  <AlertIcon className="w-5 h-5" />
+                  {hasWeakness ? '苦手特訓（10もん）' : 'まだ苦手はありません'}
+                </button>
+              </div>
             </div>
-          </>
-        ) : (
-          <div className="space-y-3">
-            {[10, 20, 50, 100].map(c => (
-              <button key={c} onClick={() => { setSelDan('ALL'); setQCount(c) }}
-                className={`w-full py-3 rounded-2xl font-black text-xl border-b-4 active:scale-95 transition-all
-                  ${selDan === 'ALL' && qCount === c ? 'bg-orange-500 text-white border-orange-700 shadow-lg' : 'bg-white border-orange-100 text-orange-300'}`}>
-                ランダム {c}もん
-              </button>
-            ))}
-            <div className="border-t border-slate-100 pt-3">
-              <button
-                onClick={() => hasWeakness && setSelDan('WEAKNESS')}
-                disabled={!hasWeakness}
-                className={`w-full py-3 rounded-2xl font-black text-xl border-b-4 active:scale-95 transition-all flex items-center justify-center gap-2
-                  ${selDan === 'WEAKNESS' ? 'bg-rose-500 text-white border-rose-700 shadow-lg'
-                  : hasWeakness ? 'bg-white border-rose-100 text-rose-400'
-                  : 'bg-slate-100 border-slate-200 text-slate-300'}`}>
-                <AlertIcon className="w-6 h-6" />
-                {hasWeakness ? '苦手特訓（10もん）' : 'まだ苦手はありません'}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* スタートバー（固定フッター） */}

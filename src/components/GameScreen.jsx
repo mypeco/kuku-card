@@ -29,7 +29,7 @@ const TenKeyPad = ({ onInput, onClear, disabled, handedness, onToggleHand, isLan
         style={isLandscape ? { gridTemplateColumns: 'repeat(3, 4rem)' } : {}}>
         {btns.map(n => (
           <button key={n}
-            className={`${isLandscape ? 'w-16 h-16' : ''} rounded-xl bg-white border-b-[3px] border-emerald-200 text-2xl font-bold text-emerald-600 active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
+            className={`${isLandscape ? 'w-16 h-16' : ''} rounded-xl bg-sky-400 border-b-[3px] border-sky-600 text-2xl font-bold text-white active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
             onClick={() => !disabled && onInput(n)}
           >{n}</button>
         ))}
@@ -185,7 +185,7 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
 
       {/* メインエリア：横置き時は左右分割 */}
       {isLandscape && isTenkey ? (
-        <div className={`flex flex-1 min-h-0 p-6 gap-6 items-center ${handLeft ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div className={`flex flex-1 min-h-0 p-4 gap-3 items-center ${handLeft ? 'flex-row-reverse' : 'flex-row'}`}>
           <div className="flex-1 flex items-center justify-center min-w-0">
             <QuestionCard />
           </div>
