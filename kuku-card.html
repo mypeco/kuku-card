@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>九九マスター</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .shake { animation: shake 0.3s; }
+        
+        body { touch-action: none; background-color: #f0fdf4; overflow: hidden; height: 100dvh; width: 100vw; }
+        #root { height: 100%; width: 100%; }
+        
+        .scroll-y { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+    </style>
+</head>
+<body class="text-slate-700 font-sans select-none">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- Icons ---
+        const Icon = ({ p, className, onClick }) => <svg onClick={onClick} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{p}</svg>;
+        const Icons = {
+            Home: (p) => <Icon {...p} p={<><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>} />,
+            User: (p) => <Icon {...p} p={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />,
+            Trash: (p) => <Icon {...p} p={<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>} />,
+            Zap: (p) => <Icon {...p} p={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />,
+            Grid: (p) => <Icon {...p} p={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>} />,
+            Alert: (p) => <Icon {...p} p={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />,
+        };
+
+        const playSound = (type) => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            const t = ctx.currentTime;
+            
+            if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, t); osc.frequency.exponentialRampToValueAtTime(1760, t + 0.1);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.start(t); osc.stop(t + 0.1);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, t); osc.frequency.linearRampToValueAtTime(100, t + 0.2);
+                gain.gain.setValueAtTime(0.2, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                osc.start(t); osc.stop(t + 0.2);
+            } else if (type === 'tap') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, t);
+                gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                osc.start(t); osc.stop(t + 0.05);
+            }
+        };
+
+        const kukuReadings = {
+            1: ["いんいちが", "いんにが", "いんさんが", "いんしが", "いんごが", "いんろくが", "いんしちが", "いんはちが", "いんくが"],
+            2: ["にいちが", "ににんが", "にさんが", "にしが", "にご", "にろく", "にしち", "にはち", "にく"],
+            3: ["さんいちが", "さんにが", "さざんが", "さんし", "さんご", "さぶろく", "さんしち", "さんぱ", "さんく"],
+            4: ["しいちが", "しにが", "しさん", "しし", "しご", "しろく", "ししち", "しは", "しく"],
+            5: ["ごいちが", "ごに", "ごさん", "ごし", "ごご", "ごろく", "ごしち", "ごは", "ごっく"],
+            6: ["ろくいちが", "ろくに", "ろくさん", "ろくし", "ろくご", "ろくろく", "ろくしち", "ろくは", "ろっく"],
+            7: ["しちいちが", "しちに", "しちさん", "しちし", "しちご", "しちろく", "しちしち", "しちは", "しちく"],
+            8: ["はちいちが", "はちに", "はちさん", "はちし", "はちご", "はちろく", "はちしち", "はっぱ", "はっく"],
+            9: ["くいちが", "くに", "くさん", "くし", "くご", "くろく", "くしち", "くは", "くく"]
+        };
+
+        const generateQuestions = (dan, mode, count, weaknessMap = {}) => {
+            let qs = [];
+            
+            if (dan === 'WEAKNESS') {
+                const keys = Object.keys(weaknessMap).filter(k => weaknessMap[k] > 0);
+                keys.sort((a, b) => weaknessMap[b] - weaknessMap[a]);
+                const targets = keys.slice(0, 10).map(k => {
+                    const [d, m] = k.split('-').map(Number);
+                    return {d, m};
+                });
+                while (targets.length < 10) {
+                   const d = Math.floor(Math.random()*9)+1;
+                   const m = Math.floor(Math.random()*9)+1;
+                   targets.push({d,m});
+                }
+                qs = targets;
+                for (let i = qs.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [qs[i], qs[j]] = [qs[j], qs[i]];
+                }
+            } else if (dan === 'ALL') {
+                const all = [];
+                for(let d=1; d<=9; d++) for(let m=1; m<=9; m++) all.push({d, m});
+                
+                // 完全ランダム抽出（count数分だけ）
+                // まず全組み合わせをシャッフル
+                for (let i = all.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [all[i], all[j]] = [all[j], all[i]];
+                }
+                
+                // 足りない場合は補充（100問などの場合、81問以上になるため）
+                qs = [];
+                while(qs.length < count) {
+                    if (all.length > 0) {
+                        qs.push(all.pop());
+                    } else {
+                        // allが空になったら再補充
+                        const refill = [];
+                        for(let d=1; d<=9; d++) for(let m=1; m<=9; m++) refill.push({d, m});
+                        // シャッフルしてallに入れる
+                        for (let i = refill.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [refill[i], refill[j]] = [refill[j], refill[i]];
+                        }
+                        all.push(...refill);
+                    }
+                }
+            } else {
+                const d = parseInt(dan);
+                const base = [1,2,3,4,5,6,7,8,9].map(m => ({d, m}));
+                if (mode === 'normal') qs = base;
+                else if (mode === 'reverse') qs = base.reverse();
+                else if (mode === 'shuffle') {
+                    qs = base;
+                    for (let i = qs.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [qs[i], qs[j]] = [qs[j], qs[i]];
+                    }
+                }
+            }
+            return qs.map(q => ({ ...q, a: q.d * q.m }));
+        };
+
+        const ReadingToggleBtn = ({ show, onToggle }) => (
+            <button onClick={onToggle} className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all shadow-sm ${show ? 'bg-emerald-100 text-emerald-600 border-2 border-emerald-200' : 'bg-slate-50 text-slate-400 border-2 border-slate-100'}`}>
+                <span className="text-[10px] font-black leading-none mb-0.5">よみかた</span>
+                <span className="text-[10px] font-bold leading-none">{show ? 'あり' : 'なし'}</span>
+            </button>
+        );
+
+        // 保護者画面（デザインリニューアル版）
+        const Dashboard = ({ history, onClose, onDelete, onDeleteAll }) => {
+            // 表示用のモードテキストを生成する関数
+            const getModeDisplay = (h) => {
+                if (h.label.includes('特訓')) return { text: '苦手特訓', color: 'bg-rose-400' };
+                if (h.label.includes('ランダム')) return { text: h.label.replace('ランダム', 'ランダム '), color: 'bg-orange-400' };
+                
+                // 段の場合
+                const danNum = h.label.replace('のだん','').replace('の段','');
+                let subText = '';
+                
+                // subMode（詳細モード）に基づいた表示
+                if (h.subMode === 'reverse') subText = 'ぎゃくじゅん';
+                else if (h.subMode === 'shuffle') subText = 'バラバラ';
+                else if (h.subMode === 'normal') subText = 'じゅんばん';
+
+                const finalText = subText ? `${danNum}の段 ${subText}` : `${danNum}の段`;
+                return { text: finalText, color: 'bg-emerald-500' };
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-50 z-50 flex flex-col animate-pop">
+                    <header className="bg-white p-4 flex justify-between items-center shadow-sm shrink-0 z-10">
+                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-lg">
+                            <Icons.User className="w-6 h-6" /> 保護者用記録
+                        </div>
+                        <button onClick={onClose} className="px-4 py-1.5 bg-slate-400 text-white rounded-full text-sm font-bold">閉じる</button>
+                    </header>
+
+                    {/* テーブルヘッダー風ラベル */}
+                    <div className="bg-slate-50 px-6 py-2 grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr] gap-2 text-xs font-bold text-slate-400 text-center border-b border-slate-200">
+                        <div className="text-left">スタンプ</div>
+                        <div>日時</div>
+                        <div>正答率</div>
+                        <div>タイム</div>
+                        <div>入力</div>
+                    </div>
+
+                    <div className="flex-1 scroll-y p-4">
+                        <div className="flex justify-end mb-4">
+                            {history.length > 0 && (
+                                <button onClick={onDeleteAll} className="text-rose-500 text-xs flex items-center gap-1 bg-white hover:bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100 shadow-sm"><Icons.Trash className="w-3 h-3" />全削除</button>
+                            )}
+                        </div>
+                        
+                        {history.length === 0 ? <p className="text-center text-slate-400 mt-10">記録はまだありません</p> : (
+                            <div className="flex flex-col gap-4">
+                                {history.slice().reverse().map(h => {
+                                    const hasErr = h.wrongList && h.wrongList.length > 0;
+                                    const dateObj = new Date(h.date);
+                                    const modeInfo = getModeDisplay(h);
+                                    
+                                    return (
+                                        <div key={h.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative group">
+                                            {/* 削除ボタン */}
+                                            <button onClick={() => onDelete(h.id)} className="absolute top-2 right-2 text-slate-200 hover:text-rose-400 p-2"><Icons.Trash className="w-4 h-4" /></button>
+
+                                            <div className="grid grid-cols-[1fr_2fr_1.5fr_1.5fr_1fr] gap-2 items-center text-center">
+                                                {/* スタンプ */}
+                                                <div className="text-3xl text-left">{h.stamp}</div>
+                                                
+                                                {/* 日時 & 詳細モード */}
+                                                <div className="flex flex-col items-center text-xs text-slate-500 leading-tight">
+                                                    <span className="font-bold text-slate-700 text-sm">
+                                                        {dateObj.getMonth()+1}/{dateObj.getDate()}
+                                                    </span>
+                                                    <span>
+                                                        {dateObj.getHours().toString().padStart(2,'0')}:{dateObj.getMinutes().toString().padStart(2,'0')}
+                                                    </span>
+                                                    {/* モード詳細バッジ */}
+                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded text-white mt-1 w-max max-w-full whitespace-pre-wrap text-center leading-tight ${modeInfo.color}`}>
+                                                        {modeInfo.text}
+                                                    </span>
+                                                </div>
+
+                                                {/* 正答率 */}
+                                                <div className={`text-xl font-black ${h.accuracy === 100 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {h.modeType === 'tenkey' ? <>{h.accuracy}<span className="text-xs font-bold">%</span></> : <span className="text-slate-300 text-sm">-</span>}
+                                                </div>
+
+                                                {/* タイム */}
+                                                <div className="text-sm font-bold text-slate-600">
+                                                    {Math.round(parseFloat(h.timeStr))}<span className="text-xs">秒</span>
+                                                </div>
+
+                                                {/* 入力方法 */}
+                                                <div className="flex justify-center">
+                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${h.modeType === 'flash' ? 'bg-amber-100 text-amber-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                                                        {h.modeType === 'flash' ? 'フラッシュ' : 'テンキー'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* 間違いリスト */}
+                                            {hasErr && (
+                                                <div className="mt-3 pt-2 border-t border-slate-50">
+                                                    <div className="text-[10px] font-bold text-slate-400 mb-1.5">まちがえた問題:</div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {h.wrongList.map((w, i) => (
+                                                            <span key={i} className="bg-rose-50 text-rose-500 px-2 py-1 rounded-lg text-sm font-bold font-mono shadow-sm border border-rose-100">
+                                                                {w.d}×{w.m}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const TenKeyPad = ({ onInput, onClear, disabled }) => {
+            const btns = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0];
+            return (
+                <div className="w-full h-full max-h-[40vh] grid grid-cols-3 gap-2 p-2">
+                    {btns.map(n => (
+                        <button key={n} 
+                            className={`rounded-xl bg-white border-b-[3px] border-emerald-200 text-2xl font-bold text-emerald-600 active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
+                            onClick={() => !disabled && onInput(n)}
+                        >{n}</button>
+                    ))}
+                    <button onClick={onClear} className="col-start-3 row-start-4 rounded-xl bg-amber-100 border-b-[3px] border-amber-200 text-amber-600 font-bold active:border-b-0 active:translate-y-[3px] flex items-center justify-center">C</button>
+                </div>
+            );
+        };
+
+        const GameScreen = ({ config, showReading, onToggleReading, onExit, onFinish }) => {
+            const [qs, setQs] = useState([]);
+            const [idx, setIdx] = useState(0);
+            const [input, setInput] = useState('');
+            const [feedback, setFeedback] = useState('none'); 
+            const [startTime, setStartTime] = useState(null);
+            const [wrongList, setWrongList] = useState([]);
+            const [mistakeCount, setMistakeCount] = useState(0);
+            const [showFlashAns, setShowFlashAns] = useState(false);
+
+            useEffect(() => {
+                setQs(generateQuestions(config.dan, config.subMode, config.count, config.weaknessMap));
+                setStartTime(Date.now());
+            }, []);
+
+            const q = qs[idx];
+            const handleTenKeyInput = (num) => {
+                if (feedback !== 'none') return;
+                playSound('tap');
+                const nextInput = input + num.toString();
+                const strAns = q.a.toString();
+                let isCheckNow = false;
+                if (strAns.length === 1) isCheckNow = true;
+                else if (nextInput.length >= 2) isCheckNow = true;
+                if (strAns.length > nextInput.length) { if (nextInput[0] !== strAns[0]) isCheckNow = true; }
+                setInput(nextInput);
+
+                if (isCheckNow) {
+                    if (parseInt(nextInput) === q.a) {
+                        setFeedback('correct');
+                        playSound('correct');
+                        setTimeout(() => nextQ(), 300);
+                    } else {
+                        setFeedback('wrong');
+                        playSound('wrong');
+                        setMistakeCount(c => c + 1);
+                        setWrongList(prev => [...prev, {d: q.d, m: q.m}]);
+                        setInput('');
+                        setTimeout(() => setFeedback('none'), 500);
+                    }
+                }
+            };
+
+            const handleFlashTap = () => {
+                if (showFlashAns) return;
+                playSound('tap');
+                setShowFlashAns(true);
+                setTimeout(() => nextQ(), 400);
+            };
+
+            const nextQ = () => {
+                setFeedback('none');
+                setInput('');
+                setShowFlashAns(false);
+                if (idx < qs.length - 1) {
+                    setIdx(i => i + 1);
+                } else {
+                    finishGame();
+                }
+            };
+
+            const finishGame = () => {
+                const timeMs = Date.now() - startTime;
+                onFinish({ timeMs, mistakeCount, wrongList, total: qs.length });
+            };
+
+            if (!q) return null;
+
+            return (
+                <div className="flex flex-col h-full w-full bg-emerald-50 relative overflow-hidden">
+                    <div className="h-1.5 bg-emerald-200 shrink-0">
+                        <div className="h-full bg-emerald-500 transition-all duration-300" style={{width: `${(idx / qs.length)*100}%`}}></div>
+                    </div>
+                    <header className="p-2 flex justify-between items-center shrink-0 z-10 relative">
+                        <div className="w-12">
+                            <button onClick={onExit} className="text-slate-400 hover:text-slate-600 p-1"><Icons.Home className="w-7 h-7" /></button>
+                        </div>
+                        <div className="font-bold text-emerald-600 bg-white px-4 py-1 rounded-full shadow-sm text-sm">
+                            {idx + 1} / {qs.length}
+                        </div>
+                        <div className="w-12 flex justify-end">
+                            {config.dan !== 'ALL' && config.dan !== 'WEAKNESS' && (
+                                <ReadingToggleBtn show={showReading} onToggle={onToggleReading} />
+                            )}
+                        </div>
+                    </header>
+
+                    <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-0">
+                        <div className={`w-full max-w-sm bg-white rounded-[2rem] shadow-lg flex flex-col items-center justify-center relative border-b-4 overflow-hidden transition-all
+                            ${feedback === 'correct' ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100'}
+                            ${feedback === 'wrong' ? 'border-rose-400 shake bg-rose-50' : ''}
+                            ${config.modeType === 'tenkey' ? 'h-3/4 max-h-[16rem]' : 'h-full max-h-[25rem]'}
+                        `}>
+                            <div className="flex items-center gap-1 sm:gap-2 text-[4rem] sm:text-[5rem] font-black text-slate-700 leading-none">
+                                <span>{q.d}</span>
+                                <span className="text-emerald-300 text-3xl sm:text-4xl">×</span>
+                                <span>{q.m}</span>
+                                <span className="text-emerald-300 text-3xl sm:text-4xl">＝</span>
+                                {config.modeType === 'tenkey' ? (
+                                    <span className={`min-w-[1.2em] text-center ${input ? 'text-slate-800' : 'text-slate-200'}`}>{input || '?'}</span>
+                                ) : (
+                                    <span className={`${showFlashAns ? 'text-slate-800 animate-pop' : 'text-transparent'}`}>{q.a}</span>
+                                )}
+                            </div>
+                            {config.dan !== 'ALL' && config.dan !== 'WEAKNESS' && showReading && (
+                                <div className="absolute bottom-4 sm:bottom-6 text-emerald-500 font-bold bg-white/80 px-4 py-1 rounded-full animate-pop text-lg sm:text-xl tracking-widest border border-emerald-100">
+                                    {kukuReadings[q.d][q.m - 1]}
+                                </div>
+                            )}
+                            {config.modeType === 'flash' && (
+                                <div onClick={handleFlashTap} className="absolute inset-0 z-10 cursor-pointer"></div>
+                            )}
+                        </div>
+                        {config.modeType === 'flash' && (
+                            <div className="mt-6 text-slate-400 font-bold animate-pulse text-lg">タップして こたえあわせ</div>
+                        )}
+                    </div>
+
+                    {config.modeType === 'tenkey' && (
+                        <div className="bg-slate-100 p-2 pb-safe rounded-t-[2rem] h-[45vh] shrink-0 w-full max-w-md mx-auto">
+                            <TenKeyPad onInput={handleTenKeyInput} onClear={() => setInput('')} disabled={feedback !== 'none'} />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ResultScreen = ({ result, modeType, onRetry, onHome, onOpenParent }) => {
+            const sec = (result.timeMs / 1000).toFixed(1);
+            const accuracy = Math.max(0, Math.round(((result.total - result.mistakeCount) / result.total) * 100));
+            
+            let stamp = '👍';
+            let msg = 'よくがんばったね！';
+            if (accuracy === 100) { stamp = '💮'; msg = 'かんぺき！すごい！'; }
+            else if (accuracy >= 80) { stamp = '🎉'; msg = 'そのちょうし！'; }
+            if (modeType === 'flash') { stamp = '⚡'; msg = 'スピードアップ！'; }
+
+            return (
+                <div className="flex flex-col items-center justify-center h-full bg-orange-50 animate-pop p-6 relative">
+                    <button onClick={onOpenParent} className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-2 bg-white rounded-full text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-200 text-xs font-bold transition-all">
+                        <Icons.User className="w-4 h-4" />
+                        記録を見る
+                    </button>
+                    <div className="text-[7rem] md:text-[9rem] animate-bounce mb-2 filter drop-shadow-md select-none">{stamp}</div>
+                    <h2 className="text-2xl md:text-3xl font-black text-orange-600 mb-6">{msg}</h2>
+                    
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-lg mb-8">
+                        <div className="flex justify-between items-end border-b border-orange-100 pb-2 mb-2">
+                            <span className="text-slate-400 font-bold text-sm">タイム</span>
+                            <span className="text-4xl font-black text-slate-700">{sec}<span className="text-base font-normal ml-1">びょう</span></span>
+                        </div>
+                        {modeType === 'tenkey' && (
+                            <div className="flex justify-between items-end">
+                                <span className="text-slate-400 font-bold text-sm">せいかい</span>
+                                <span className="text-4xl font-black text-emerald-500">{accuracy}<span className="text-base font-normal ml-1">%</span></span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-4 w-full max-w-xs">
+                        <button onClick={onHome} className="flex-1 py-4 bg-slate-400 text-white rounded-2xl font-bold shadow-md active:translate-y-1">もどる</button>
+                        <button onClick={onRetry} className="flex-1 py-4 bg-orange-400 text-white rounded-2xl font-bold shadow-md active:translate-y-1">もういちど</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('MENU');
+            const [tab, setTab] = useState('DAN');
+            const [selDan, setSelDan] = useState(1);
+            const [subMode, setSubMode] = useState('normal');
+            const [qCount, setQCount] = useState(10);
+            const [modeType, setModeType] = useState('tenkey');
+            const [showReading, setShowReading] = useState(true);
+
+            const [lastResult, setLastResult] = useState(null);
+            const [showParent, setShowParent] = useState(false);
+            
+            // 履歴と苦手データ
+            const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('kuku_v4_history') || '[]'));
+            const [weaknessMap, setWeaknessMap] = useState(() => JSON.parse(localStorage.getItem('kuku_v4_weakness') || '{}'));
+
+            useEffect(() => { localStorage.setItem('kuku_v4_history', JSON.stringify(history)); }, [history]);
+            useEffect(() => { localStorage.setItem('kuku_v4_weakness', JSON.stringify(weaknessMap)); }, [weaknessMap]);
+
+            const hasWeakness = Object.values(weaknessMap).some(v => v > 0);
+
+            const startGame = (overrideConfig = null) => {
+                 if (overrideConfig) {
+                     setTab('CHALLENGE');
+                     setSelDan('WEAKNESS');
+                 }
+                 setView('GAME');
+            };
+            
+            const handleFinish = (res) => {
+                const accuracy = Math.max(0, Math.round(((res.total - res.mistakeCount) / res.total) * 100));
+                let stamp = '👍';
+                if (accuracy === 100) stamp = '💮';
+                else if (accuracy >= 80) stamp = '🎉';
+                
+                // 苦手データ更新
+                const newWeaknessMap = { ...weaknessMap };
+                res.wrongList.forEach(w => {
+                    const key = `${w.d}-${w.m}`;
+                    newWeaknessMap[key] = (newWeaknessMap[key] || 0) + 1;
+                });
+                setWeaknessMap(newWeaknessMap);
+
+                const label = selDan === 'WEAKNESS' ? '苦手特訓' : (tab === 'DAN' ? `${selDan}のだん` : `ランダム${qCount}`);
+
+                // ヒント情報(showReading)とサブモードを保存
+                const isReadingOn = (tab === 'DAN' && selDan !== 'WEAKNESS') ? showReading : null;
+                const currentSubMode = (tab === 'DAN' && selDan !== 'WEAKNESS') ? subMode : null;
+
+                const rec = {
+                    id: Date.now(), date: Date.now(), modeType,
+                    label,
+                    timeStr: `${(res.timeMs/1000).toFixed(1)}`,
+                    accuracy, stamp, wrongList: res.wrongList,
+                    isReadingOn,
+                    subMode: currentSubMode
+                };
+                setHistory(prev => [...prev, rec]);
+                setLastResult({...res, ...rec});
+                setView('RESULT');
+            };
+
+            const handleDeleteHistory = (id) => { if(confirm('削除しますか？')) setHistory(prev => prev.filter(h => h.id !== id)); };
+            const handleDeleteAll = () => { if(confirm('全ての履歴を削除しますか？')) setHistory([]); };
+
+            return (
+                <div className="h-full w-full max-w-md mx-auto bg-white md:shadow-2xl md:border-x border-slate-100 flex flex-col relative">
+                    {view === 'MENU' && (
+                        <div className="flex flex-col h-full animate-pop">
+                            <header className="flex justify-between items-center p-4 shrink-0 relative">
+                                <button onClick={() => setShowParent(true)} className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-500 rounded-full text-xs font-bold hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+                                    <Icons.User className="w-4 h-4"/>
+                                    記録
+                                </button>
+                                <h1 className="text-2xl font-black text-emerald-500 tracking-tight absolute left-1/2 -translate-x-1/2 pointer-events-none">⭐ 九九マスター ⭐</h1>
+                                <div className="w-12 flex justify-end">
+                                    {tab === 'DAN' && (
+                                        <ReadingToggleBtn show={showReading} onToggle={() => setShowReading(!showReading)} />
+                                    )}
+                                </div>
+                            </header>
+
+                            <div className="px-6 shrink-0 mb-2">
+                                <div className="flex p-1 bg-slate-100 rounded-2xl">
+                                    <button onClick={() => { setTab('DAN'); setSelDan(1); }} className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all ${tab === 'DAN' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`}>れんしゅう (だん)</button>
+                                    <button onClick={() => { setTab('CHALLENGE'); setSelDan('ALL'); }} className={`flex-1 py-2 rounded-xl font-bold text-sm transition-all ${tab === 'CHALLENGE' ? 'bg-white text-orange-500 shadow-sm' : 'text-slate-400'}`}>🔥チャレンジ🔥</button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col justify-center px-6 gap-2 min-h-0 pb-20">
+                                {tab === 'DAN' ? (
+                                    <>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {[1,2,3,4,5,6,7,8,9].map(d => (
+                                                <button key={d} onClick={() => setSelDan(d)} className={`h-16 rounded-2xl text-3xl font-black border-b-4 active:translate-y-[2px] active:border-b-0 transition-all ${selDan === d ? 'bg-emerald-500 text-white border-emerald-700 shadow-lg' : 'bg-white border-emerald-100 text-emerald-300'}`}>
+                                                    {d}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="bg-emerald-50 p-2 rounded-xl mt-2">
+                                            <div className="flex gap-2">
+                                                {['normal:じゅんばん', 'reverse:ぎゃく', 'shuffle:バラバラ'].map(m => {
+                                                    const [key, label] = m.split(':');
+                                                    return (
+                                                        <button key={key} onClick={() => setSubMode(key)} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${subMode === key ? 'bg-emerald-500 text-white shadow' : 'bg-white text-emerald-300'}`}>{label}</button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {[10, 20, 50, 100].map(c => (
+                                            <button key={c} onClick={() => { setSelDan('ALL'); setQCount(c); }} className={`w-full py-3 rounded-2xl font-black text-xl border-b-4 active:scale-95 transition-all ${selDan === 'ALL' && qCount === c ? 'bg-orange-500 text-white border-orange-700 shadow-lg' : 'bg-white border-orange-100 text-orange-300'}`}>
+                                                ランダム {c}もん
+                                            </button>
+                                        ))}
+                                        <div className="border-t border-slate-100 my-2"></div>
+                                        <button 
+                                            onClick={() => { if(hasWeakness) setSelDan('WEAKNESS'); }} 
+                                            disabled={!hasWeakness}
+                                            className={`w-full py-3 rounded-2xl font-black text-xl border-b-4 active:scale-95 transition-all flex items-center justify-center gap-2 ${selDan === 'WEAKNESS' ? 'bg-rose-500 text-white border-rose-700 shadow-lg' : (hasWeakness ? 'bg-white border-rose-100 text-rose-400' : 'bg-slate-100 border-slate-200 text-slate-300')}`}
+                                        >
+                                            <Icons.Alert className="w-6 h-6"/> 
+                                            {hasWeakness ? "苦手特訓 (10もん)" : "まだ苦手はありません"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur border-t border-slate-100 max-w-md mx-auto z-20 pb-safe">
+                                <div className="flex gap-3 mb-3">
+                                    <button onClick={() => setModeType('tenkey')} className={`flex-1 py-2 flex flex-col items-center justify-center rounded-xl border-2 transition-all ${modeType === 'tenkey' ? 'border-sky-500 bg-sky-50 text-sky-600' : 'border-slate-100 text-slate-300 grayscale opacity-60'}`}>
+                                        <Icons.Grid className="w-4 h-4 mb-0.5"/>
+                                        <span className="text-[10px] font-bold">テンキー</span>
+                                    </button>
+                                    <button onClick={() => setModeType('flash')} className={`flex-1 py-2 flex flex-col items-center justify-center rounded-xl border-2 transition-all ${modeType === 'flash' ? 'border-yellow-500 bg-yellow-50 text-yellow-600' : 'border-slate-100 text-slate-300 grayscale opacity-60'}`}>
+                                        <Icons.Zap className="w-4 h-4 mb-0.5"/>
+                                        <span className="text-[10px] font-bold">フラッシュ</span>
+                                    </button>
+                                </div>
+                                <button onClick={() => startGame()} className={`w-full py-3 rounded-xl font-black text-xl text-white shadow-xl active:scale-95 transition-all ${tab==='DAN'?'bg-emerald-500':'bg-orange-500'}`}>
+                                    スタート
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'GAME' && (
+                        <GameScreen config={{dan: selDan, subMode, count: qCount, modeType, weaknessMap}} showReading={showReading} onToggleReading={() => setShowReading(!showReading)} onExit={() => setView('MENU')} onFinish={handleFinish} />
+                    )}
+
+                    {view === 'RESULT' && lastResult && (
+                        <ResultScreen result={lastResult} modeType={modeType} onRetry={() => startGame()} onHome={() => setView('MENU')} onOpenParent={() => setShowParent(true)} />
+                    )}
+
+                    {showParent && (
+                        <Dashboard history={history} onClose={() => setShowParent(false)} onDelete={handleDeleteHistory} onDeleteAll={handleDeleteAll} />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
