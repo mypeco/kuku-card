@@ -115,7 +115,7 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
 
   const AnswerPanel = () => (
     <div className={`flex flex-col ${isLandscape ? 'justify-center p-4' : 'p-3'}`}
-      style={isLandscape ? { width: '300px' } : {}}>
+      style={isLandscape ? { width: '38%', maxWidth: '420px', minWidth: '260px' } : {}}>
       {/* 利き手切替 */}
       <div className="flex justify-end mb-2 shrink-0">
         <button onClick={toggleHand}

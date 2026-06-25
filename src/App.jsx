@@ -66,8 +66,9 @@ export default function App() {
     if (user) await saveUserSettings(user.id, newSettings)
   }
 
+  // ラッパーは常にビューポート全体を占める。各画面が内部でmax-widthを持つ。
   const wrapper = (children) => (
-    <div className="h-full w-full max-w-2xl mx-auto bg-white md:shadow-2xl md:border-x border-slate-100 flex flex-col relative overflow-hidden">
+    <div style={{ width: '100vw', height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white', position: 'relative' }}>
       {children}
     </div>
   )

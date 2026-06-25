@@ -14,26 +14,26 @@ function useIsLandscape() {
   return ls
 }
 
-const TenKeyPad = ({ onInput, onClear, disabled, handedness, onToggleHand }) => {
+const TenKeyPad = ({ onInput, onClear, disabled, handedness, onToggleHand, isLandscape }) => {
   const btns = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0]
   return (
     <div className="flex flex-col h-full p-2 gap-1">
-      {/* 利き手切替 */}
       <div className="flex justify-end shrink-0 mb-1">
         <button onClick={onToggleHand}
           className="text-xs font-bold px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm active:scale-95">
           {handedness === 'right' ? '🤜 右手' : '🤛 左手'}
         </button>
       </div>
-      <div className="flex-1 grid grid-cols-3 gap-2">
+      {/* 横置き：aspect-squareで正方形ボタン、縦置き：flex-1で高さを使い切る */}
+      <div className={`grid grid-cols-3 gap-2 ${isLandscape ? '' : 'flex-1'}`}>
         {btns.map(n => (
           <button key={n}
-            className={`rounded-xl bg-white border-b-[3px] border-emerald-200 text-2xl font-bold text-emerald-600 active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
+            className={`${isLandscape ? 'aspect-square' : ''} rounded-xl bg-white border-b-[3px] border-emerald-200 text-2xl font-bold text-emerald-600 active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
             onClick={() => !disabled && onInput(n)}
           >{n}</button>
         ))}
         <button onClick={onClear}
-          className="col-start-3 row-start-4 rounded-xl bg-amber-100 border-b-[3px] border-amber-200 text-amber-600 font-bold active:border-b-0 active:translate-y-[3px] flex items-center justify-center">
+          className={`col-start-3 row-start-4 ${isLandscape ? 'aspect-square' : ''} rounded-xl bg-amber-100 border-b-[3px] border-amber-200 text-amber-600 font-bold active:border-b-0 active:translate-y-[3px] flex items-center justify-center`}>
           C
         </button>
       </div>
@@ -141,14 +141,15 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
 
   // ── テンキーパネル ─────────────────────────────────────────
   const TenkeyPanel = () => (
-    <div className={`bg-slate-100 rounded-t-[2rem] ${isLandscape ? 'h-full rounded-none rounded-l-[2rem]' : 'h-[42vh]'} shrink-0`}
-      style={isLandscape ? { width: '300px' } : {}}>
+    <div className={`bg-slate-100 ${isLandscape ? 'h-full rounded-2xl' : 'h-[42vh] rounded-t-[2rem]'} shrink-0`}
+      style={isLandscape ? { width: '38%', maxWidth: '420px', minWidth: '260px' } : {}}>
       <TenKeyPad
         onInput={handleTenKey}
         onClear={() => setInput('')}
         disabled={feedback !== 'none'}
         handedness={settings.handedness}
         onToggleHand={toggleHand}
+        isLandscape={isLandscape}
       />
     </div>
   )
