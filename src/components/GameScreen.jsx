@@ -105,8 +105,8 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
   const QuestionCard = () => (
     <div className="flex items-center justify-center w-full">
       <div className={`bg-white rounded-3xl shadow-lg flex flex-col items-center justify-center border-b-4 transition-all relative px-8 py-7 w-full max-w-sm
-        ${feedback === 'correct' ? 'border-emerald-400 bg-emerald-50' : 'border-white'}
-        ${feedback === 'wrong'   ? 'border-rose-300 shake bg-rose-50' : ''}`}>
+        ${feedback === 'correct' ? 'border-emerald-400' : 'border-white'}
+        ${feedback === 'wrong'   ? 'border-rose-300 shake' : ''}`}>
         <div className="flex items-center gap-3 text-[4rem] sm:text-[5rem] font-black text-slate-700 leading-none">
           <span>{q.d}</span>
           <span className="text-emerald-300 text-3xl sm:text-4xl">×</span>
@@ -169,7 +169,7 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
       </header>
 
       {/* メインエリア：常にカード上・テンキー下 */}
-      <div className="flex-1 flex flex-col px-4 pt-4 pb-2 gap-4 min-h-0 items-center justify-start">
+      <div className="flex-1 flex flex-col px-4 pt-4 pb-2 gap-8 min-h-0 items-center justify-start">
         <QuestionCard />
         {!isTenkey && (
           <div className="text-center text-slate-400 font-bold animate-pulse text-base">

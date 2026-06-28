@@ -40,11 +40,11 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
         setFeedback('idle')
         if (idx < qs.length - 1) setIdx(i => i + 1)
         else { setDone(true); onComplete() }
-      }, 1200)
+      }, 500)
     } else {
       setFeedback('wrong')
       if (settings.isSoundEnabled) soundService.playWrong()
-      setTimeout(() => setFeedback('idle'), 700)
+      setTimeout(() => setFeedback('idle'), 400)
     }
   }
 
@@ -112,8 +112,8 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
     <div className="px-4 pb-2 w-full max-w-sm mx-auto shrink-0">
       <div className={`${isSingle ? 'flex justify-center' : 'grid grid-cols-3'} gap-3`}>
         {q.options.map(opt => (
-          <button key={opt} onClick={() => handleAns(opt)} disabled={feedback !== 'idle'}
-            className={`h-16 text-3xl font-black bg-sky-400 text-white rounded-2xl border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 disabled:opacity-50 shadow-md
+          <button key={opt} onClick={() => handleAns(opt)}
+            className={`h-16 text-3xl font-black bg-sky-400 text-white rounded-2xl border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 shadow-md
               ${isSingle ? 'w-full max-w-[180px]' : ''}`}>
             {opt}
           </button>
