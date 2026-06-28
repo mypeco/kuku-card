@@ -22,7 +22,6 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
   const [feedback, setFeedback] = useState('idle')
   const [done, setDone] = useState(false)
   const isLandscape = useIsLandscape()
-  const handLeft = settings.handedness === 'left'
 
   const q = qs[idx]
   const reading = kukuReadingsFull[q.dan][q.multiplier - 1]
@@ -48,9 +47,6 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
       setTimeout(() => setFeedback('idle'), 700)
     }
   }
-
-  const toggleHand = () =>
-    onUpdateSettings({ ...settings, handedness: handLeft ? 'right' : 'left' })
 
   if (done) return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center animate-pop bg-orange-50">
@@ -91,13 +87,11 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
   }
 
   const QuestionPanel = () => (
-    <div className={`flex flex-col items-center justify-center ${isLandscape ? 'flex-1 p-6' : 'p-4'}`}>
-      {/* プログレス */}
-      <div className="w-full max-w-sm bg-orange-100 h-3 rounded-full mb-4 overflow-hidden">
+    <div className="flex flex-col items-center justify-center p-4 w-full max-w-sm">
+      <div className="w-full bg-orange-100 h-3 rounded-full mb-4 overflow-hidden">
         <div className="bg-orange-400 h-full transition-all duration-500" style={{ width: `${(idx / qs.length) * 100}%` }} />
       </div>
-      {/* カード：横置き時はコンパクトに固定サイズ、縦置きは全幅 */}
-      <div className={`bg-white rounded-[2.5rem] shadow-xl flex flex-col items-center justify-center border-b-8 border-orange-50 relative ${isLandscape ? 'px-10 py-8' : 'w-full py-8'}`}>
+      <div className="bg-white rounded-[2.5rem] shadow-xl flex flex-col items-center justify-center border-b-8 border-orange-50 relative w-full py-8">
         <div className="flex items-center justify-center gap-1 mb-4">
           <Part val={q.dan} type="dan" />
           <span className="text-3xl text-orange-200 font-black">×</span>
@@ -114,44 +108,22 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
     </div>
   )
 
-  const AnswerPanel = () => (
-    <div className={`flex flex-col ${isLandscape ? 'items-center justify-center p-4' : 'p-3'}`}
-      style={isLandscape ? { width: '38%', maxWidth: '380px', minWidth: '240px' } : {}}>
-      {/* 利き手切替 */}
-      <div className="flex justify-end w-full mb-2 shrink-0">
-        <button onClick={toggleHand}
-          className="text-xs font-bold px-3 py-1.5 rounded-full bg-white border border-stone-200 text-stone-500 shadow-sm active:scale-95">
-          {handLeft ? '🤛 左手' : '🤜 右手'}
-        </button>
+  const answerPanel = (
+    <div className="px-4 pb-2 w-full max-w-sm mx-auto shrink-0">
+      <div className={`${isSingle ? 'flex justify-center' : 'grid grid-cols-3'} gap-3`}>
+        {q.options.map(opt => (
+          <button key={opt} onClick={() => handleAns(opt)} disabled={feedback !== 'idle'}
+            className={`h-16 text-3xl font-black bg-sky-400 text-white rounded-2xl border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 disabled:opacity-50 shadow-md
+              ${isSingle ? 'w-full max-w-[180px]' : ''}`}>
+            {opt}
+          </button>
+        ))}
       </div>
-      {/* 横置き：ボタンを固定サイズ3列グリッドにして余白で視認性向上 */}
-      {isLandscape ? (
-        <div className={`${isSingle ? 'flex justify-center' : 'grid grid-cols-3'} gap-3`}
-          style={isSingle ? {} : { gridTemplateColumns: 'repeat(3, 4.5rem)' }}>
-          {q.options.map(opt => (
-            <button key={opt} onClick={() => handleAns(opt)} disabled={feedback !== 'idle'}
-              className={`w-[4.5rem] h-[4.5rem] text-2xl font-black bg-sky-400 text-white rounded-2xl border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 disabled:opacity-50 shadow-md
-                ${isSingle ? 'w-full max-w-[5rem]' : ''}`}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className={`${isSingle ? 'flex justify-center' : 'grid grid-cols-3'} gap-2 flex-1`}>
-          {q.options.map(opt => (
-            <button key={opt} onClick={() => handleAns(opt)} disabled={feedback !== 'idle'}
-              className={`py-4 text-3xl font-black bg-sky-400 text-white rounded-2xl border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 active:scale-95 disabled:opacity-50 shadow-md
-                ${isSingle ? 'w-full max-w-[180px]' : ''}`}>
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   )
 
   return (
-    <div className="flex flex-col h-full bg-orange-50 overflow-hidden">
+    <div className="flex flex-col h-full bg-green-50 overflow-hidden">
       <header className="px-4 py-2 flex justify-between items-center shrink-0">
         <button onClick={onExit} className="text-stone-300 hover:text-stone-500">
           <HomeIcon className="w-8 h-8" />
@@ -167,17 +139,10 @@ const EasyGame = ({ dan, level, settings, onUpdateSettings, onExit, onComplete }
         </button>
       </header>
 
-      {isLandscape ? (
-        <div className={`flex flex-1 min-h-0 p-4 gap-3 items-center ${handLeft ? 'flex-row-reverse' : 'flex-row'}`}>
-          <QuestionPanel />
-          <AnswerPanel />
-        </div>
-      ) : (
-        <div className="flex flex-col flex-1 min-h-0">
-          <QuestionPanel />
-          <AnswerPanel />
-        </div>
-      )}
+      <div className="flex flex-col flex-1 min-h-0 items-center justify-start pt-2">
+        <QuestionPanel />
+        {answerPanel}
+      </div>
     </div>
   )
 }

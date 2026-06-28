@@ -19,19 +19,6 @@ const ModeSelect = ({ user, onSelectMaster, onSelectEasy, onBack }) => (
     </div>
 
     <div className="flex flex-wrap gap-6 justify-center w-full max-w-2xl">
-      {/* 九九マスター */}
-      <button onClick={onSelectMaster}
-        className="flex flex-col items-center gap-4 p-8 bg-white rounded-3xl shadow-xl border-b-4 border-emerald-200 active:border-b-0 active:translate-y-[4px] transition-all hover:shadow-2xl"
-        style={{ minWidth: '240px', flex: '1 1 240px', maxWidth: '340px' }}>
-        <div className="text-6xl">⭐</div>
-        <div>
-          <h2 className="text-2xl font-black text-emerald-600 mb-1">九九マスター</h2>
-          <p className="text-stone-400 text-sm font-bold text-center leading-relaxed">
-            テンキーで入力 or フラッシュ<br />苦手特訓・ランダム出題
-          </p>
-        </div>
-      </button>
-
       {/* やさしい九九カード */}
       <button onClick={onSelectEasy}
         className="flex flex-col items-center gap-4 p-8 bg-white rounded-3xl shadow-xl border-b-4 border-orange-200 active:border-b-0 active:translate-y-[4px] transition-all hover:shadow-2xl"
@@ -41,6 +28,19 @@ const ModeSelect = ({ user, onSelectMaster, onSelectEasy, onBack }) => (
           <h2 className="text-2xl font-black text-orange-500 mb-1">やさしい九九カード</h2>
           <p className="text-stone-400 text-sm font-bold text-center leading-relaxed">
             えらんで答える3段階<br />スタンプで達成記録
+          </p>
+        </div>
+      </button>
+
+      {/* 九九マスター */}
+      <button onClick={onSelectMaster}
+        className="flex flex-col items-center gap-4 p-8 bg-white rounded-3xl shadow-xl border-b-4 border-emerald-200 active:border-b-0 active:translate-y-[4px] transition-all hover:shadow-2xl"
+        style={{ minWidth: '240px', flex: '1 1 240px', maxWidth: '340px' }}>
+        <div className="text-6xl">⭐</div>
+        <div>
+          <h2 className="text-2xl font-black text-emerald-600 mb-1">九九マスター</h2>
+          <p className="text-stone-400 text-sm font-bold text-center leading-relaxed">
+            テンキーで入力 or フラッシュ<br />苦手特訓・ランダム出題
           </p>
         </div>
       </button>

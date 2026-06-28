@@ -14,30 +14,20 @@ function useIsLandscape() {
   return ls
 }
 
-const TenKeyPad = ({ onInput, onClear, disabled, handedness, onToggleHand, isLandscape }) => {
+const TenKeyPad = ({ onInput, onClear, disabled }) => {
   const btns = [7, 8, 9, 4, 5, 6, 1, 2, 3, 0]
-  // 横置き時：ボタンをw-16 h-16の固定サイズにしてグリッド全体をcentering
   return (
-    <div className="flex flex-col h-full items-center justify-center p-4 gap-3">
-      <div className="flex justify-end w-full">
-        <button onClick={onToggleHand}
-          className="text-xs font-bold px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-500 shadow-sm active:scale-95">
-          {handedness === 'right' ? '🤜 右手' : '🤛 左手'}
-        </button>
-      </div>
-      <div className={`grid grid-cols-3 ${isLandscape ? 'gap-3' : 'gap-2 w-full flex-1'}`}
-        style={isLandscape ? { gridTemplateColumns: 'repeat(3, 4rem)' } : {}}>
-        {btns.map(n => (
-          <button key={n}
-            className={`${isLandscape ? 'w-16 h-16' : ''} rounded-xl bg-sky-400 border-b-[3px] border-sky-600 text-2xl font-bold text-white active:border-b-0 active:translate-y-[3px] transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
-            onClick={() => !disabled && onInput(n)}
-          >{n}</button>
-        ))}
-        <button onClick={onClear}
-          className={`col-start-3 row-start-4 ${isLandscape ? 'w-16 h-16' : ''} rounded-xl bg-amber-100 border-b-[3px] border-amber-200 text-amber-600 font-bold active:border-b-0 active:translate-y-[3px] flex items-center justify-center`}>
-          C
-        </button>
-      </div>
+    <div className="grid grid-cols-3 gap-3 w-full" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      {btns.map(n => (
+        <button key={n}
+          className={`h-16 rounded-2xl bg-sky-400 border-b-4 border-sky-600 text-3xl font-bold text-white active:border-b-0 active:translate-y-1 transition-all shadow-sm flex items-center justify-center ${n === 0 ? 'col-start-2' : ''}`}
+          onClick={() => !disabled && onInput(n)}
+        >{n}</button>
+      ))}
+      <button onClick={onClear}
+        className="col-start-3 row-start-4 h-16 rounded-2xl bg-amber-100 border-b-4 border-amber-200 text-amber-600 text-2xl font-bold active:border-b-0 active:translate-y-1 flex items-center justify-center">
+        C
+      </button>
     </div>
   )
 }
@@ -114,7 +104,7 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
   // ── 問題カード ─────────────────────────────────────────────
   const QuestionCard = () => (
     <div className="flex items-center justify-center w-full">
-      <div className={`bg-white rounded-3xl shadow-lg flex flex-col items-center justify-center border-b-4 transition-all relative px-10 py-8 w-full max-w-xl
+      <div className={`bg-white rounded-3xl shadow-lg flex flex-col items-center justify-center border-b-4 transition-all relative px-8 py-7 w-full max-w-sm
         ${feedback === 'correct' ? 'border-emerald-400 bg-emerald-50' : 'border-white'}
         ${feedback === 'wrong'   ? 'border-rose-300 shake bg-rose-50' : ''}`}>
         <div className="flex items-center gap-3 text-[4rem] sm:text-[5rem] font-black text-slate-700 leading-none">
@@ -142,14 +132,11 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
 
   // ── テンキー（フレームなし・背景と同化） ────────────────────
   const tenKeyPanel = (
-    <div className="shrink-0 px-4 pb-2">
+    <div className="shrink-0 px-4 pb-2 w-full max-w-sm">
       <TenKeyPad
         onInput={handleTenKey}
         onClear={() => setInput('')}
         disabled={feedback !== 'none'}
-        handedness={settings.handedness}
-        onToggleHand={toggleHand}
-        isLandscape={false}
       />
     </div>
   )
@@ -182,7 +169,7 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
       </header>
 
       {/* メインエリア：常にカード上・テンキー下 */}
-      <div className="flex-1 flex flex-col p-4 gap-4 min-h-0 items-center justify-center">
+      <div className="flex-1 flex flex-col px-4 pt-4 pb-2 gap-4 min-h-0 items-center justify-start">
         <QuestionCard />
         {!isTenkey && (
           <div className="text-center text-slate-400 font-bold animate-pulse text-base">
