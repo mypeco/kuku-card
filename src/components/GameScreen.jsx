@@ -113,51 +113,49 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
 
   // ── 問題カード ─────────────────────────────────────────────
   const QuestionCard = () => (
-    <div className={`bg-white rounded-[2rem] shadow-lg flex flex-col items-center justify-center border-b-4 overflow-hidden transition-all relative
-      ${feedback === 'correct' ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100'}
-      ${feedback === 'wrong'   ? 'border-rose-400 shake bg-rose-50' : ''}
-      ${isLandscape ? 'px-12 py-10' : (isTenkey ? 'py-8 px-8 w-full' : 'flex-1 max-h-[22rem] w-full px-8')}
-    `}>
-      <div className="flex items-center gap-2 text-[3.5rem] sm:text-[5rem] font-black text-slate-700 leading-none">
-        <span>{q.d}</span>
-        <span className="text-emerald-300 text-2xl sm:text-4xl">×</span>
-        <span>{q.m}</span>
-        <span className="text-emerald-300 text-2xl sm:text-4xl">＝</span>
-        {isTenkey ? (
-          <span className={`min-w-[1.2em] text-center ${input ? 'text-slate-800' : 'text-slate-200'}`}>
-            {input || '?'}
-          </span>
-        ) : (
-          <span className={showFlashAns ? 'text-slate-800 animate-pop' : 'text-transparent'}>{q.a}</span>
-        )}
-      </div>
-      {/* 読み方：式の直下に配置 */}
-      {showReading && (
-        <div className="mt-4 text-emerald-500 font-bold px-4 py-1 rounded-full text-base tracking-widest border border-emerald-100 bg-emerald-50">
-          {kukuReadings[q.d][q.m - 1]}
+    <div className="flex items-center justify-center w-full">
+      <div className={`bg-white rounded-3xl shadow-lg flex flex-col items-center justify-center border-b-4 transition-all relative px-10 py-8 w-full max-w-xl
+        ${feedback === 'correct' ? 'border-emerald-400 bg-emerald-50' : 'border-white'}
+        ${feedback === 'wrong'   ? 'border-rose-300 shake bg-rose-50' : ''}`}>
+        <div className="flex items-center gap-3 text-[4rem] sm:text-[5rem] font-black text-slate-700 leading-none">
+          <span>{q.d}</span>
+          <span className="text-emerald-300 text-3xl sm:text-4xl">×</span>
+          <span>{q.m}</span>
+          <span className="text-emerald-300 text-3xl sm:text-4xl">＝</span>
+          {isTenkey ? (
+            <span className={`min-w-[1.2em] text-center ${input ? 'text-slate-800' : 'text-slate-200'}`}>
+              {input || '?'}
+            </span>
+          ) : (
+            <span className={showFlashAns ? 'text-slate-800 animate-pop' : 'text-transparent'}>{q.a}</span>
+          )}
         </div>
-      )}
-      {!isTenkey && <div onClick={handleFlashTap} className="absolute inset-0 z-10 cursor-pointer" />}
+        {showReading && (
+          <div className="mt-4 text-emerald-500 font-bold px-4 py-1 rounded-full text-sm tracking-widest border border-emerald-100 bg-emerald-50">
+            {kukuReadings[q.d][q.m - 1]}
+          </div>
+        )}
+        {!isTenkey && <div onClick={handleFlashTap} className="absolute inset-0 z-10 cursor-pointer" />}
+      </div>
     </div>
   )
 
-  // ── テンキーパネル ─────────────────────────────────────────
-  const TenkeyPanel = () => (
-    <div className={`bg-slate-100 ${isLandscape ? 'h-full rounded-2xl' : 'h-[42vh] rounded-t-[2rem]'} shrink-0`}
-      style={isLandscape ? { width: '38%', maxWidth: '420px', minWidth: '260px' } : {}}>
+  // ── テンキー（フレームなし・背景と同化） ────────────────────
+  const tenKeyPanel = (
+    <div className="shrink-0 px-4 pb-2">
       <TenKeyPad
         onInput={handleTenKey}
         onClear={() => setInput('')}
         disabled={feedback !== 'none'}
         handedness={settings.handedness}
         onToggleHand={toggleHand}
-        isLandscape={isLandscape}
+        isLandscape={false}
       />
     </div>
   )
 
   return (
-    <div className="flex flex-col h-full w-full bg-emerald-50 overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-green-50 overflow-hidden">
       {/* プログレスバー */}
       <div className="h-1.5 bg-emerald-200 shrink-0">
         <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${(idx / qs.length) * 100}%` }} />
@@ -183,25 +181,16 @@ export const GameScreen = ({ config, settings, onUpdateSettings, onExit, onFinis
         </div>
       </header>
 
-      {/* メインエリア：横置き時は左右分割 */}
-      {isLandscape && isTenkey ? (
-        <div className={`flex flex-1 min-h-0 p-4 gap-3 items-center ${handLeft ? 'flex-row-reverse' : 'flex-row'}`}>
-          <div className="flex-1 flex items-center justify-center min-w-0">
-            <QuestionCard />
+      {/* メインエリア：常にカード上・テンキー下 */}
+      <div className="flex-1 flex flex-col p-4 gap-4 min-h-0 items-center justify-center">
+        <QuestionCard />
+        {!isTenkey && (
+          <div className="text-center text-slate-400 font-bold animate-pulse text-base">
+            タップして こたえあわせ
           </div>
-          <TenkeyPanel />
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col p-4 gap-3 min-h-0">
-          <QuestionCard />
-          {!isTenkey && (
-            <div className="text-center text-slate-400 font-bold animate-pulse text-base">
-              タップして こたえあわせ
-            </div>
-          )}
-          {isTenkey && <TenkeyPanel />}
-        </div>
-      )}
+        )}
+        {isTenkey && tenKeyPanel}
+      </div>
     </div>
   )
 }
