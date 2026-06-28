@@ -3,10 +3,11 @@ import { db, getUserSettings, saveUserSettings } from './db.js'
 import { ProfileSelect } from './components/ProfileSelect.jsx'
 import { MasterApp } from './components/MasterApp.jsx'
 import { EasyApp } from './components/EasyApp.jsx'
+import { AnaumeApp } from './components/AnaumeApp.jsx'
 import { ArrowLeftIcon } from './components/Icons.jsx'
 
 // ── モード選択画面 ────────────────────────────────────────────
-const ModeSelect = ({ user, onSelectMaster, onSelectEasy, onBack }) => (
+const ModeSelect = ({ user, onSelectMaster, onSelectEasy, onSelectAnaume, onBack }) => (
   <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b from-emerald-50 to-orange-50 p-6 animate-fade-in">
     <button onClick={onBack}
       className="absolute top-4 left-4 flex items-center gap-1 text-slate-400 hover:text-slate-600 text-sm font-bold">
@@ -19,6 +20,19 @@ const ModeSelect = ({ user, onSelectMaster, onSelectEasy, onBack }) => (
     </div>
 
     <div className="flex flex-wrap gap-6 justify-center w-full max-w-2xl">
+      {/* あなうめ九九 */}
+      <button onClick={onSelectAnaume}
+        className="flex flex-col items-center gap-4 p-8 bg-white rounded-3xl shadow-xl border-b-4 border-emerald-200 active:border-b-0 active:translate-y-[4px] transition-all hover:shadow-2xl"
+        style={{ minWidth: '240px', flex: '1 1 240px', maxWidth: '340px' }}>
+        <div className="text-6xl">💡</div>
+        <div>
+          <h2 className="text-2xl font-black text-emerald-600 mb-1">あなうめ九九</h2>
+          <p className="text-stone-400 text-sm font-bold text-center leading-relaxed">
+            かくれた数を当てよう<br />□ × 数 ＝ こたえ
+          </p>
+        </div>
+      </button>
+
       {/* やさしい九九カード */}
       <button onClick={onSelectEasy}
         className="flex flex-col items-center gap-4 p-8 bg-white rounded-3xl shadow-xl border-b-4 border-orange-200 active:border-b-0 active:translate-y-[4px] transition-all hover:shadow-2xl"
@@ -82,7 +96,15 @@ export default function App() {
       user={user}
       onSelectMaster={() => setScreen('MASTER')}
       onSelectEasy={() => setScreen('EASY')}
+      onSelectAnaume={() => setScreen('ANAUME')}
       onBack={() => setScreen('PROFILE')}
+    />
+  )
+
+  if (screen === 'ANAUME') return wrapper(
+    <AnaumeApp
+      settings={settings}
+      onExit={() => setScreen('MODE_SELECT')}
     />
   )
 
